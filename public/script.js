@@ -47,6 +47,7 @@ const sendBtn = document.getElementById("sendBtn");
 const actionBtn = document.getElementById("actionBtn"); // Start / Skip
 const statusEl = document.getElementById("status");
 const homeBtn = document.getElementById("homeBtn");
+const hintText = document.getElementById("hintText");
 
 const myName = sessionStorage.getItem("username") || "Stranger";
 
@@ -183,11 +184,20 @@ socket.on("disconnect", () => {
   });
 
   /* ---------- ESC KEY = SKIP ---------- */
- document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && state === "chatting") {
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+
+  if (state === "chatting") {
     endChatByUser();
+  } 
+  else if (state === "searching") {
+    stopSearching();
+  } 
+  else if (state === "idle") {
+    startSearching();
   }
 });
+
 
 }
 
@@ -224,12 +234,28 @@ function startSearching() {
   msgInput.disabled = true;
   sendBtn.disabled = true;
 
-  socket.emit("start-search", {
-  name: myName,
-  country: myCountry
-});
+  if (hintText) {
+    hintText.innerText = "Press ESC to stop searching";
+  }
 
+  socket.emit("start-search", {
+    name: myName,
+    country: myCountry
+  });
 }
+
+function stopSearching() {
+  state = "idle";
+
+  statusEl.innerText = "Search stopped";
+  actionBtn.innerText = "▶️ Start";
+  actionBtn.disabled = false;
+
+  if (hintText) {
+    hintText.innerText = "Press ESC to start searching";
+  }
+}
+
 
 function setIdleState() {
   state = "idle";
@@ -240,7 +266,12 @@ function setIdleState() {
 
   msgInput.disabled = true;
   sendBtn.disabled = true;
+
+  if (hintText) {
+    hintText.innerText = "Press ESC to start searching";
+  }
 }
+
 
 function sendMessage() {
   const msg = msgInput.value.trim();
