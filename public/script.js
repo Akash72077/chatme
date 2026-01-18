@@ -183,14 +183,33 @@ socket.on("disconnect", () => {
   });
 
   /* ---------- ESC KEY = SKIP ---------- */
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && state === "chatting") {
-      skipChat();
-    }
-  });
+ document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && state === "chatting") {
+    endChatByUser();
+  }
+});
+
 }
 
 /* ================= FUNCTIONS ================= */
+function endChatByUser() {
+  socket.emit("skip");
+
+  chatBox.innerHTML += `
+    <div class="message" style="color:#ffcc00;">
+      ⚠️ You ended the chat.
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  if (!chatCounted) {
+    completedChats++;
+    chatCounted = true;
+    maybeShowAd();
+  }
+
+  setIdleState(); // shows ▶️ Start
+}
 
 function startSearching() {
   hideAd();
@@ -248,7 +267,7 @@ function skipChat() {
   socket.emit("skip");
   chatBox.innerHTML = "";
 
-if (!chatCounted) {
+if (!chatCounted && chatHistory.length > 0) {
   completedChats++;
   chatCounted = true;
   maybeShowAd();
