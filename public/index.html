@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChatMe – Anonymous Chat</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- RULES MODAL -->
+<div id="rulesModal" class="modal">
+  <div class="modal-content">
+    <h2>Welcome to ChatMe</h2>
+    <ul>
+      <li>No adult or sexual words</li>
+      <li>No links allowed</li>
+      <li>Be respectful and friendly</li>
+      <li>Chats may be monitored for safety</li>
+    </ul>
+    <button id="acceptRules">Accept & Continue</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">ChatMe</div>
+  <div class="status">
+    <span id="onlineCount">0</span> online
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+  <h1>Chat with Strangers</h1>
+  <p class="desc">
+    Anonymous text chat. No sign-in required.
+  </p>
+
+  <input
+    type="text"
+    id="username"
+    placeholder="Enter username (optional)"
+    maxlength="15"
+  />
+
+  <button id="startChat">Start Chat</button>
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

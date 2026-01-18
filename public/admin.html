@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChatMe Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f0f14;
+      color: #eaeaf0;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #16161d;
+    }
+    tr:nth-child(even) {
+      background: #1c1c24;
+    }
+  </style>
+</head>
+<body>
+
+<h1>ChatMe – Admin Panel</h1>
+
+<div id="loginBox">
+  <input type="password" id="adminPass" placeholder="Admin password" />
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="panel" style="display:none;">
+  <h2>Reports</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Message</th>
+        <th>Reported By</th>
+        <th>Reported User</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody id="reportsTable"></tbody>
+  </table>
+</div>
+
+<script>
+async function login() {
+  const pass = document.getElementById("adminPass").value;
+
+  const res = await fetch("/admin/data?pass=" + pass);
+  if (!res.ok) {
+    alert("Wrong password");
+    return;
+  }
+
+  const data = await res.json();
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("panel").style.display = "block";
+
+  const table = document.getElementById("reportsTable");
+  table.innerHTML = "";
+
+  data.forEach(r => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${r.type}</td>
+      <td>${r.message || "-"}</td>
+      <td>${r.reportedBy || "-"}</td>
+      <td>${r.reportedUser || "-"}</td>
+      <td>${new Date(r.time).toLocaleString()}</td>
+    `;
+    table.appendChild(row);
+  });
+}
+</script>
+
+</body>
+</html>

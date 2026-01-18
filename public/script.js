@@ -1,0 +1,241 @@
+const socket = io();
+
+/* ================= HELPERS ================= */
+function getCountryFlag(country) {
+  if (country === "India") return "🇮🇳";
+  return "";
+}
+
+/* ================= COMMON ================= */
+const onlineEl = document.getElementById("onlineCount");
+if (onlineEl) {
+  socket.on("onlineUsers", (count) => {
+    onlineEl.innerText = count;
+  });
+}
+
+/* ================= RULES (HOME PAGE) ================= */
+const rulesModal = document.getElementById("rulesModal");
+const acceptBtn = document.getElementById("acceptRules");
+
+if (rulesModal && !sessionStorage.getItem("rulesAccepted")) {
+  rulesModal.style.display = "flex";
+} else if (rulesModal) {
+  rulesModal.style.display = "none";
+}
+
+acceptBtn?.addEventListener("click", () => {
+  sessionStorage.setItem("rulesAccepted", "yes");
+  rulesModal.style.display = "none";
+});
+
+/* ================= HOME PAGE START ================= */
+const startBtnHome = document.getElementById("startChat");
+const usernameInput = document.getElementById("username");
+
+startBtnHome?.addEventListener("click", () => {
+  let username = usernameInput.value.trim();
+  if (username === "") username = "Stranger";
+  sessionStorage.setItem("username", username);
+  window.location.href = "chat.html";
+});
+
+/* ================= CHAT PAGE ================= */
+const chatBox = document.getElementById("chatBox");
+const msgInput = document.getElementById("msg");
+const sendBtn = document.getElementById("sendBtn");
+const actionBtn = document.getElementById("actionBtn"); // Start / Skip
+const statusEl = document.getElementById("status");
+const homeBtn = document.getElementById("homeBtn");
+
+const myName = sessionStorage.getItem("username") || "Stranger";
+
+/* 🌍 REAL COUNTRY DETECTION */
+let myCountry = "Unknown";
+fetch("https://ipapi.co/json/")
+  .then(res => res.json())
+  .then(data => {
+    myCountry = data.country_name || "Unknown";
+  })
+  .catch(() => {
+    myCountry = "Unknown";
+  });
+
+/* ================= STATE ================= */
+let state = "idle"; // idle | searching | chatting
+let chatHistory = [];
+
+/* ================= HOME BUTTON ================= */
+homeBtn?.addEventListener("click", () => {
+  window.location.href = "index.html";
+});
+
+/* ================= INITIAL CHAT STATE ================= */
+if (chatBox && msgInput && sendBtn && actionBtn && statusEl) {
+  setIdleState();
+
+  /* ---------- ACTION BUTTON (START / SKIP) ---------- */
+  actionBtn.addEventListener("click", () => {
+    if (state === "idle") {
+      startSearching();
+    } else if (state === "chatting") {
+      skipChat();
+    }
+  });
+
+  /* ---------- SOCKET EVENTS ---------- */
+
+ socket.on("matched", (partner) => {
+  state = "chatting";
+  chatHistory = [];
+
+  actionBtn.innerText = "⏭ Skip";
+  actionBtn.disabled = false;
+
+  msgInput.disabled = false;
+  sendBtn.disabled = false;
+
+  statusEl.innerText = "Connected";
+
+  const flag = getCountryFlag(partner.country || "Unknown");
+
+  chatBox.innerHTML += `
+    <div class="message">
+      <b>You are now chatting with ${partner.name} ${flag}</b>
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
+
+  socket.on("message", (data) => {
+    chatBox.innerHTML += `
+      <div class="message other">
+        <b>${data.name}:</b> ${data.msg}
+      </div>
+    `;
+    chatHistory.push(data);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+
+  socket.on("warning", (data) => {
+    chatBox.innerHTML += `
+      <div class="message" style="color:#ffcc00;">
+        ⚠️ ${data.reason}
+      </div>
+    `;
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+
+  socket.on("blocked", (data) => {
+    chatBox.innerHTML += `
+      <div class="message" style="color:#ff4d4d;">
+        🚫 ${data.reason}
+      </div>
+    `;
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+
+  socket.on("partnerDisconnected", () => {
+  // Show disconnect message in chat
+  chatBox.innerHTML += `
+    <div class="message" style="color:#ff4d4d;">
+      🔌 Chat disconnected. The other user has left.
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // Reset UI to idle
+  statusEl.innerText = "Click Start to find a new user";
+  setIdleState();
+});
+socket.on("disconnect", () => {
+  chatBox.innerHTML += `
+    <div class="message" style="color:#ff4d4d;">
+      🚫 You have been disconnected due to rule violation or network issue.
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  setIdleState();
+});
+
+
+
+  /* ---------- SEND MESSAGE ---------- */
+  sendBtn.addEventListener("click", sendMessage);
+  msgInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendMessage();
+  });
+
+  /* ---------- ESC KEY = SKIP ---------- */
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && state === "chatting") {
+      skipChat();
+    }
+  });
+}
+
+/* ================= FUNCTIONS ================= */
+
+function startSearching() {
+  state = "searching";
+  chatBox.innerHTML = "";
+
+  statusEl.innerText = "Searching for a user...";
+  actionBtn.innerText = "Searching...";
+  actionBtn.disabled = true;
+
+  msgInput.disabled = true;
+  sendBtn.disabled = true;
+
+  socket.emit("start-search", {
+  name: myName,
+  country: myCountry
+});
+
+}
+
+function setIdleState() {
+  state = "idle";
+  statusEl.innerText = "Click Start to begin";
+
+  actionBtn.innerText = "▶️ Start";
+  actionBtn.disabled = false;
+
+  msgInput.disabled = true;
+  sendBtn.disabled = true;
+}
+
+function sendMessage() {
+  const msg = msgInput.value.trim();
+  if (msg === "" || state !== "chatting") return;
+
+  chatBox.innerHTML += `
+    <div class="message me">
+      <b>You:</b> ${msg}
+    </div>
+  `;
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  socket.emit("message", {
+    msg,
+    name: myName,
+    country: myCountry
+  });
+
+  chatHistory.push({ name: myName, msg });
+  msgInput.value = "";
+}
+
+function skipChat() {
+  socket.emit("skip");
+  chatBox.innerHTML = "";
+  setIdleState();
+}
+
+/* ================= REPORT (READY FOR UI) ================= */
+function reportUser() {
+  socket.emit("report", {
+    chat: chatHistory
+  });
+}

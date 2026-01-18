@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChatMe – Chat</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <div class="logo" id="homeBtn" style="cursor:pointer;">ChatMe</div>
+  <div class="status">
+    <span id="onlineCount">0</span> online
+  </div>
+</header>
+
+
+<main class="chat-container">
+  <div id="status">Connecting...</div>
+  <div id="chatBox"></div>
+</main>
+
+<div class="input-area fixed-bottom">
+  <button id="actionBtn">▶️ Start</button>
+  <input type="text" id="msg" placeholder="Type your message..." disabled />
+  <button id="sendBtn" disabled>Send</button>
+</div>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
