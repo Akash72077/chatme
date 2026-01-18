@@ -64,6 +64,10 @@ fetch("https://ipapi.co/json/")
 /* ================= STATE ================= */
 let state = "idle"; // idle | searching | chatting
 let chatHistory = [];
+let completedChats = 0;
+let chatCounted = false;
+const AD_AFTER_CHATS = 3; // you wanted 3–4, using 3
+
 
 /* ================= HOME BUTTON ================= */
 homeBtn?.addEventListener("click", () => {
@@ -73,6 +77,7 @@ homeBtn?.addEventListener("click", () => {
 /* ================= INITIAL CHAT STATE ================= */
 if (chatBox && msgInput && sendBtn && actionBtn && statusEl) {
   setIdleState();
+  hideAd();
 
   /* ---------- ACTION BUTTON (START / SKIP) ---------- */
   actionBtn.addEventListener("click", () => {
@@ -88,6 +93,7 @@ if (chatBox && msgInput && sendBtn && actionBtn && statusEl) {
  socket.on("matched", (partner) => {
   state = "chatting";
   chatHistory = [];
+  chatCounted = false;
 
   actionBtn.innerText = "⏭ Skip";
   actionBtn.disabled = false;
@@ -146,7 +152,16 @@ if (chatBox && msgInput && sendBtn && actionBtn && statusEl) {
 
   // Reset UI to idle
   statusEl.innerText = "Click Start to find a new user";
-  setIdleState();
+
+if (!chatCounted && chatHistory.length > 0) {
+  completedChats++;
+  chatCounted = true;
+  maybeShowAd();
+}
+
+
+setIdleState();
+
 });
 socket.on("disconnect", () => {
   chatBox.innerHTML += `
@@ -178,6 +193,8 @@ socket.on("disconnect", () => {
 /* ================= FUNCTIONS ================= */
 
 function startSearching() {
+  hideAd();
+
   state = "searching";
   chatBox.innerHTML = "";
 
@@ -197,7 +214,7 @@ function startSearching() {
 
 function setIdleState() {
   state = "idle";
-  statusEl.innerText = "Click Start to begin";
+  statusEl.innerText = "Click Start to find a new user";
 
   actionBtn.innerText = "▶️ Start";
   actionBtn.disabled = false;
@@ -230,8 +247,37 @@ function sendMessage() {
 function skipChat() {
   socket.emit("skip");
   chatBox.innerHTML = "";
+
+if (!chatCounted) {
+  completedChats++;
+  chatCounted = true;
+  maybeShowAd();
+}
+
+
+
   setIdleState();
 }
+
+
+function maybeShowAd() {
+  const adBox = document.getElementById("adBox");
+  if (!adBox) return;
+
+  if (completedChats >= AD_AFTER_CHATS) {
+    adBox.style.display = "block";
+   console.log("Showing ad after", AD_AFTER_CHATS, "chats");
+completedChats = 0;
+
+
+  }
+}
+
+function hideAd() {
+  const adBox = document.getElementById("adBox");
+  if (adBox) adBox.style.display = "none";
+}
+
 
 /* ================= REPORT (READY FOR UI) ================= */
 function reportUser() {
