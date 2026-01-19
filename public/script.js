@@ -250,8 +250,8 @@ function startSearching() {
 }
 
 function stopSearching() {
+  socket.emit("stop-search");
   state = "idle";
-
   statusEl.innerText = "Search stopped";
   actionBtn.innerText = "▶️ Start";
   actionBtn.disabled = false;

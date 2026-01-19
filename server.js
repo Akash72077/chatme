@@ -97,6 +97,7 @@ io.on("connection", (socket) => {
 
   /* 🔍 START SEARCH */
   socket.on("start-search", (userData) => {
+    if (waitingUser === socket) return;
   socket.username = userData.name;
   socket.country = userData.country;
 
@@ -118,6 +119,12 @@ io.on("connection", (socket) => {
     waitingUser = null;
   } else {
     waitingUser = socket;
+  }
+});
+/* 🛑 STOP SEARCH */
+socket.on("stop-search", () => {
+  if (waitingUser === socket) {
+    waitingUser = null;
   }
 });
 
@@ -212,14 +219,20 @@ if (badWord) {
     socket.emit("reported");
   });
 
-  /* ⏭️ SKIP */
-  socket.on("skip", () => {
-    if (socket.partner) {
-      socket.partner.emit("partnerDisconnected");
-      socket.partner.partner = null;
-      socket.partner = null;
-    }
-  });
+ /* ⏭️ SKIP */
+socket.on("skip", () => {
+  // If user was waiting, remove them
+  if (waitingUser === socket) {
+    waitingUser = null;
+  }
+
+  if (socket.partner) {
+    socket.partner.emit("partnerDisconnected");
+    socket.partner.partner = null;
+    socket.partner = null;
+  }
+});
+
 
   /* ❌ DISCONNECT */
   socket.on("disconnect", () => {
