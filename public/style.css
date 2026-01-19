@@ -181,3 +181,22 @@ body {
   border: none;
   padding: 10px;
 }
+
+@media (max-width: 600px) {
+  body {
+    font-size: 16px;
+  }
+
+  .message {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  input, button {
+    font-size: 16px;
+  }
+
+  #chatBox {
+    font-size: 15px;
+  }
+}

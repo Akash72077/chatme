@@ -67,7 +67,7 @@ let state = "idle"; // idle | searching | chatting
 let chatHistory = [];
 let completedChats = 0;
 let chatCounted = false;
-const AD_AFTER_CHATS = 3; // you wanted 3–4, using 3
+const AD_AFTER_CHATS = 1; // you wanted 3–4, using 3
 
 
 /* ================= HOME BUTTON ================= */
@@ -81,13 +81,18 @@ if (chatBox && msgInput && sendBtn && actionBtn && statusEl) {
   hideAd();
 
   /* ---------- ACTION BUTTON (START / SKIP) ---------- */
-  actionBtn.addEventListener("click", () => {
-    if (state === "idle") {
-      startSearching();
-    } else if (state === "chatting") {
-      skipChat();
-    }
-  });
+ actionBtn.addEventListener("click", () => {
+  if (state === "idle") {
+    startSearching();
+  } 
+  else if (state === "searching") {
+    stopSearching();
+  } 
+  else if (state === "chatting") {
+    endChatByUser();
+  }
+});
+
 
   /* ---------- SOCKET EVENTS ---------- */
 
@@ -316,12 +321,12 @@ function maybeShowAd() {
 
   if (completedChats >= AD_AFTER_CHATS) {
     adBox.style.display = "block";
-   console.log("Showing ad after", AD_AFTER_CHATS, "chats");
-completedChats = 0;
-
-
+    adBox.scrollIntoView({ behavior: "smooth" });
+    console.log("Ad shown after", AD_AFTER_CHATS, "chats");
+    completedChats = 0;
   }
 }
+
 
 function hideAd() {
   const adBox = document.getElementById("adBox");

@@ -20,16 +20,28 @@ mongoose.connect(process.env.MONGO_URI)
 
 /* ================= REPORT SCHEMA ================= */
 const reportSchema = new mongoose.Schema({
-  type: String,            // sexual | bad_word | user_report
-  message: String,
-  reportedBy: String,
-  reportedUser: String,
-  chat: Array,
+  type: {
+    type: String, // sexual | bad_word | user_report
+    required: true
+  },
+
+  matchedWord: String,      // exact word that triggered
+  message: String,          // full message user sent
+
+  reportedBy: String,       // socket.id of sender
+  reportedUser: String,     // socket.id of partner
+
+  username: String,         // optional (future)
+  country: String,          // optional
+
+  actionTaken: String,      // disconnected | warned
+
   time: {
     type: Date,
     default: Date.now
   }
 });
+
 
 const Report = mongoose.model("Report", reportSchema);
 
@@ -72,6 +84,11 @@ function containsWord(message, list) {
 let waitingUser = null;
 let onlineUsers = 0;
 
+function findMatchedWord(message, list) {
+  const msg = message.toLowerCase();
+  return list.find(word => msg.includes(word));
+}
+
 /* ================= SOCKET LOGIC ================= */
 io.on("connection", (socket) => {
   onlineUsers++;
@@ -110,34 +127,67 @@ io.on("connection", (socket) => {
     const msg = data.msg;
 
     // 🔴 Sexual content → auto block & store
-    if (containsWord(msg, sexualWords)) {
-      socket.emit("blocked", {
-        reason: "Sexual content is not allowed."
-      });
+   const sexualWord = findMatchedWord(msg, sexualWords);
+if (sexualWord) {
+  try {
+    await Report.create({
+      type: "sexual",
+      matchedWord: sexualWord,
+      message: msg,
+      reportedBy: socket.id,
+      reportedUser: socket.partner?.id || null,
+      username: socket.username || "Stranger",
+      country: socket.country || "Unknown",
+      actionTaken: "disconnected"
+    });
 
-      await Report.create({
-        type: "sexual",
-        message: msg,
-        reportedBy: socket.id,
-        reportedUser: socket.partner?.id || null
-      });
+    socket.emit("blocked", {
+      reason: "Sexual content is not allowed."
+    });
 
-      if (socket.partner) {
-        socket.partner.emit("partnerDisconnected");
-        socket.partner.partner = null;
-      }
-
-      socket.disconnect();
-      return;
+    if (socket.partner) {
+      socket.partner.emit("partnerDisconnected");
+      socket.partner.partner = null;
     }
+
+    // ⏳ let MongoDB finish write
+    setTimeout(() => {
+      socket.disconnect(true);
+    }, 300);
+
+  } catch (err) {
+    console.error("Failed to save sexual report:", err);
+  }
+
+  return;
+}
 
     // 🟡 Bad words → warning (optional store later)
-    if (containsWord(msg, badWords)) {
-      socket.emit("warning", {
-        reason: "Inappropriate language is not allowed."
-      });
-      return;
-    }
+   const badWord = findMatchedWord(msg, badWords);
+if (badWord) {
+  try {
+    await Report.create({
+      type: "bad_word",
+      matchedWord: badWord,
+      message: msg,
+      reportedBy: socket.id,
+      reportedUser: socket.partner?.id || null,
+      username: socket.username || "Stranger",
+      country: socket.country || "Unknown",
+      actionTaken: "warned"
+    });
+
+  } catch (err) {
+    console.error("Failed to save bad word report:", err);
+  }
+
+  socket.emit("warning", {
+    reason: "Inappropriate language is not allowed."
+  });
+
+  return;
+}
+
 
     // ✅ Safe message
     if (socket.partner) {
