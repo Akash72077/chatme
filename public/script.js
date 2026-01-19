@@ -67,7 +67,8 @@ let state = "idle"; // idle | searching | chatting
 let chatHistory = [];
 let completedChats = 0;
 let chatCounted = false;
-const AD_AFTER_CHATS = 1; // you wanted 3–4, using 3
+
+const AD_AFTER_CHATS = 3; // you wanted 3–4, using 3
 
 
 /* ================= HOME BUTTON ================= */

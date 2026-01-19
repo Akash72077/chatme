@@ -155,16 +155,12 @@ button:hover {
 .chat-container {
   padding-bottom: 80px; /* height of input bar */
 }
-/* FULL SCREEN CHAT LAYOUT */
-body {
-  height: 100vh;
-  overflow: hidden;
-}
+
 
 .chat-container {
   position: fixed;
-  top: 60px;            /* height of header */
-  bottom: 70px;         /* height of input bar */
+  top: 70px;            /* height of header */
+  bottom: 80px;         /* height of input bar */
   left: 0;
   right: 0;
 
@@ -182,7 +178,7 @@ body {
   padding: 10px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   body {
     font-size: 16px;
   }
@@ -199,4 +195,24 @@ body {
   #chatBox {
     font-size: 15px;
   }
+    header {
+    padding: 10px 15px;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .status {
+    font-size: 13px;
+  }
+
+  .fixed-bottom {
+    padding: 8px;
+  }
+
+  .input-area button {
+    min-width: 70px;
+  }
+
 }
